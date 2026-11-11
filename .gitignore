@@ -63,3 +63,14 @@ Cheat Engine/MonoDataCollector/MonoDataCollector/x64/Release/MonoData.941726A9.t
 *.vsidx
 *.lpi
 Cheat Engine/MonoDataCollector/MonoDataCollector/MonoDataCollector.vcxproj
+
+# output of build/build.sh
+/dist/
+
+# compiler output of the secondary projects
+Cheat Engine/*/lib/
+Cheat Engine/speedhack/unitbin/
+Cheat Engine/ceregreset/ceregreset.res
+Cheat Engine/launcher/cheatengine.res
+Cheat Engine/windowsrepair/windowsrepair.res
+Cheat Engine/winhook/winhook.res

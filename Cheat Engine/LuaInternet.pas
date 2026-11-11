@@ -21,8 +21,11 @@ procedure initializeLuaInternet;
 {$endif}
 
 type
+  TInternetDataEvent=procedure(sender: TObject; data: pointer; size: integer) of object;
+
   TWinInternet=class
   private
+    fOnData: TInternetDataEvent;
     {$ifdef windows}
     internet: HINTERNET;
     fheader: string;
@@ -42,6 +45,12 @@ type
     function postURL(urlstring: string; urlencodedpostdata: string; results: tstream): boolean;
     constructor create(name: string);
     destructor destroy; override;
+  public
+    //lua streaming callback support (OnReceiveData)
+    luaState: pointer;
+    luaReceiveDataRef: integer;
+    procedure luaReceiveData(sender: TObject; data: pointer; size: integer);
+    property OnData: TInternetDataEvent read fOnData write fOnData; //called for every block of data received by getURL/postURL
   published
     {$ifdef windows}
     property Header: string read fheader write fheader;
@@ -53,7 +62,7 @@ type
 
 implementation
 
-uses {$ifdef darwin}macport, registry,{$endif}{$ifndef standalone}MainUnit2, lua, LuaClass, LuaObject, LuaHandler,{$endif} URIParser, dialogs;
+uses {$ifdef darwin}macport, registry,{$endif}{$ifndef standalone}MainUnit2, lua, lauxlib, LuaClass, LuaObject, LuaHandler,{$endif} URIParser, dialogs;
 
 {$ifndef windows}
 var cookies: tstringhashlist;
@@ -205,14 +214,20 @@ var
   requestflags: dword;
   err: integer;
 begin
-  h:='Content-Type: application/x-www-form-urlencoded';
+  //Use the user provided header when there is one. Only fall back on the form content type when no content type was given
+  h:=trim(fheader);
+  if pos('content-type:', lowercase(h))=0 then
+  begin
+    if h<>'' then h:=h+#13#10;
+    h:=h+'Content-Type: application/x-www-form-urlencoded';
+  end;
 
   result:=false;
   if internet<>nil then
   begin
     //InternetConnect(internet, );
 
-    requestflags:=INTERNET_FLAG_PRAGMA_NOCACHE;
+    requestflags:=INTERNET_FLAG_PRAGMA_NOCACHE or INTERNET_FLAG_RELOAD or INTERNET_FLAG_NO_CACHE_WRITE;
 
     u:=ParseURI(urlstring);
 
@@ -263,6 +278,9 @@ begin
               begin
                 results.WriteBuffer(buf[0], actualread);
                 result:=true; //something was read
+
+                if assigned(fOnData) then
+                  fOnData(self, buf, actualread);
               end;
             finally
               FreeMemAndNil(buf);
@@ -315,6 +333,9 @@ begin
         begin
           results.WriteBuffer(buf[0], actualread);
           result:=true; //something was read
+
+          if assigned(fOnData) then
+            fOnData(self, buf, actualread);
         end;
       finally
         FreeMemAndNil(buf);
@@ -329,6 +350,28 @@ end;
 
 {$endif}
 
+
+procedure TWinInternet.luaReceiveData(sender: TObject; data: pointer; size: integer);
+{$ifndef standalone}
+var L: Plua_State;
+  oldtop: integer;
+{$endif}
+begin
+  {$ifndef standalone}
+  L:=luaState;
+  if (L=nil) or (luaReceiveDataRef=0) then exit;
+
+  oldtop:=lua_gettop(L);
+  lua_rawgeti(L, LUA_REGISTRYINDEX, luaReceiveDataRef);
+  if lua_isfunction(L,-1) then
+  begin
+    luaclass_newClass(L, self);
+    lua_pushlstring(L, data, size);
+    lua_pcall(L, 2, 0, 0); //errors in the callback must not abort the transfer
+  end;
+  lua_settop(L, oldtop); //drops the non-function value or a pcall error message
+  {$endif}
+end;
 
 constructor TWinInternet.create(name: string);
 begin
@@ -387,6 +430,7 @@ begin
   begin
     s:=TMemoryStream.create;
     try
+      i.luaState:=L;
       if i.getURL(Lua_ToString(L, -1), s) then
       begin
         lua_pushlstring(L, s.Memory, s.Size);
@@ -415,6 +459,7 @@ begin
       else
         param:='';
 
+      i.luaState:=L;
       if i.postURL(Lua_ToString(L, 1), param, s) then
       begin
         lua_pushlstring(L, s.Memory, s.Size);
@@ -426,11 +471,45 @@ begin
   end;
 end;
 
+function wininternet_getOnReceiveData(L: Plua_State): integer; cdecl;
+var i: TWinInternet;
+begin
+  i:=luaclass_getClassObject(L);
+  if i.luaReceiveDataRef<>0 then
+    lua_rawgeti(L, LUA_REGISTRYINDEX, i.luaReceiveDataRef)
+  else
+    lua_pushnil(L);
+  result:=1;
+end;
+
+function wininternet_setOnReceiveData(L: Plua_State): integer; cdecl;
+//OnReceiveData=function(sender, receiveddata)  : called for every block of data received during getURL/postURL (streaming)
+var i: TWinInternet;
+begin
+  result:=0;
+  i:=luaclass_getClassObject(L);
+
+  if i.luaReceiveDataRef<>0 then
+  begin
+    luaL_unref(L, LUA_REGISTRYINDEX, i.luaReceiveDataRef);
+    i.luaReceiveDataRef:=0;
+    i.OnData:=nil;
+  end;
+
+  if (lua_gettop(L)>=1) and lua_isfunction(L,1) then
+  begin
+    lua_pushvalue(L,1);
+    i.luaReceiveDataRef:=luaL_ref(L, LUA_REGISTRYINDEX);
+    i.OnData:=i.luaReceiveData;
+  end;
+end;
+
 procedure wininternet_addMetaData(L: PLua_state; metatable: integer; userdata: integer );
 begin
   object_addMetaData(L, metatable, userdata);
   luaclass_addClassFunctionToTable(L, metatable, userdata, 'getURL', wininternet_getURL);
   luaclass_addClassFunctionToTable(L, metatable, userdata, 'postURL', wininternet_postURL);
+  luaclass_addPropertyToTable(L, metatable, userdata, 'OnReceiveData', wininternet_getOnReceiveData, wininternet_setOnReceiveData);
 
 end;
 

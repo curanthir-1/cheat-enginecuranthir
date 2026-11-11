@@ -281,8 +281,9 @@ object frmTrainerGenerator: TfrmTrainerGenerator
           Top = 0
           Width = 233
           BorderSpacing.Left = 7
-          Caption = 'Don''t support Cheat Engine (or yourself)'
+          Caption = 'Ad-free trainer (ad support removed)'
           Checked = True
+          Enabled = False
           OnChange = cbSupportCheatEngineChange
           State = cbChecked
           TabOrder = 4

@@ -156,7 +156,7 @@ end;
 
 function TADWindow.getBase: string;
 begin
-  result:='http://www.cheatengine.org/ceads.php';
+  result:=''; //ad server removed
   if userurl<>'' then //let's see if it's time to show the url of the user
   begin
     if (Random(100)+1)<=userpercentage then  //(1-100) <= userpercentage
@@ -175,34 +175,9 @@ begin
 end;
 
 procedure TADWindow.LoadAd;
-var url: widestring;
-  pid: dword;
 begin
-  {$ifdef windows}
-  if (counter=0) or (secondsSinceLastShowAd>120) then
-  begin
-    GetWindowThreadProcessId(GetForegroundWindow,pid);
-    if (counter=0) or (GetCurrentProcessId=pid) then //only show the ad when the foreground window is ce or if it's the first ad
-    begin
-      if visible and browserisvalid then
-      begin
-       // BringToFront;
-        inc(counter);
-
-
-
-        url:=getbase+'?cewidth='+inttostr(clientwidth)+'&ceheight='+inttostr(clientheight)+'&fn='+extractfilename(ExtractFileNameWithoutExt(application.ExeName))+'&counter='+inttostr(counter)+getoptionalstring;
-        browser.Navigate(url);
-
-      end;
-
-      secondsSinceLastShowAd:=0;
-
-      //showmessage(inttostr(browser.width));
-    end;
-  end;
-  {$endif}
-
+  //Advertising support has been removed from this build. This is intentionally a no-op
+  //(no browser is created and no network request is ever made)
 end;
 
 procedure TADWindow.setCanClose(state: boolean);
@@ -228,44 +203,15 @@ begin
 
   color:=clGreen;
 
-  {$ifdef windows}
-  try
-    browser := CreateOleObject('InternetExplorer.Application');
-
-    windows.setparent(browser.hwnd, handle); // you can use panel1.handle, etc..
-    browser.toolbar:=false;
-    browser.fullscreen:=true;
-    browser.Resizable:=false;
-    browser.visible:=true;
-    browserisvalid:=true; //we got to this point without a horrible crash, so I guess it's ok
-    browserisvalid2:=true;
-
-  except
-
-  end;
-  {$endif}
-
-  //loadAd;
-
-  showAdTimer:=TTimer.create(self);
-  showAdTimer.interval:=1000; //every second
-  showAdTimer.OnTimer:=checkAdTimer;
-  showAdTimer.enabled:=true;
-
+  //No embedded browser and no ad timer: the ad window is an inert placeholder
+  browserisvalid:=false;
+  browserisvalid2:=false;
 end;
 
 destructor TADWindow.destroy;
 begin
-  {$ifdef windows}
-  browser.Quit();
-  browser:=NULL; //Unassigned;
-
-
   if attachedform<>nil then
     attachedform.WindowProc:=attachedwindowproc;
-
-  CoFreeUnusedLibraries;
-  {$endif}
 
   inherited destroy;
 end;

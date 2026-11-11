@@ -631,6 +631,7 @@ type TCEForm=class(TForm) //TCustomForm)
     procedure SaveToXML(Node: TDOMNode; dontdeactivate:boolean=false);
     procedure LoadFromXML(Node: TDOMNode);
     procedure RestoreToDesignState;
+    procedure ReaderError(Reader: TReader; const Message: string; var Handled: Boolean);
     procedure SaveCurrentStateasDesign;
     function getVisible:boolean;
     procedure setVisible(state: boolean);
@@ -722,6 +723,18 @@ type TCEForm=class(TForm) //TCustomForm)
 
     property DoNotSaveInTable: boolean read fDoNotSaveInTable write fDoNotSaveInTable default False;
 end;
+
+type
+  //Simple stand-in for the markdown viewer control used by newer extensions (e.g. AITools).
+  //It shows the (markdown) text as-is in a read-only, word wrapped memo.
+  TMarkdownViewer=class(TMemo)
+  private
+    fHeaderColor: TColor;
+  public
+    constructor Create(AOwner: TComponent); override;
+  published
+    property HeaderColor: TColor read fHeaderColor write fHeaderColor default clDefault;
+  end;
 
 type TCEMemo=class(TMemo)
   published
@@ -982,10 +995,21 @@ end;  }
 
 implementation
 
-uses luahandler,luacaller, formdesignerunit, CheckLst, colorbox, SynCompletion;
+uses luahandler,luacaller, formdesignerunit, CheckLst, colorbox, SynCompletion,
+  SynGutter, SynGutterBase, SynGutterMarks, SynGutterLineNumber, SynGutterChanges,
+  SynGutterCodeFolding;
 
 resourcestring
   rsInvalidFormData = 'Invalid formdata';
+
+constructor TMarkdownViewer.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+  fHeaderColor:=clDefault;
+  ReadOnly:=true;
+  WordWrap:=true;
+  ScrollBars:=ssAutoVertical;
+end;
 
 {$ifdef cpu32}
 //In this implementation the data field of treenodes contain a pointer to an 8 byte storage  (I don't think I could just change/add to the Data field of the TTreenode components)
@@ -1149,6 +1173,13 @@ end;
 
 
 
+procedure TCEForm.ReaderError(Reader: TReader; const Message: string; var Handled: Boolean);
+begin
+  //Forms designed with a newer lazarus/cheat engine version can contain properties this build does not know.
+  //Skip those instead of failing to load the whole form
+  Handled:=pos('nknown property', Message)>0;
+end;
+
 procedure TCEForm.RestoreToDesignState;
 var wasactive: boolean;
   reader: TReader;
@@ -1179,6 +1210,7 @@ begin
     reader:=CreateLRSReader(savedDesign,DestroyDriver);
 
     reader.OnSetMethodProperty:=SetMethodProperty;
+    reader.OnError:=ReaderError;
 
     reader.ReadRootComponent(self);
 
@@ -1460,6 +1492,9 @@ begin
 
   ms:=TMemoryStream.Create;
   ms.LoadFromFile(filename);
+  if saveddesign=nil then
+    saveddesign:=TMemorystream.create;
+
   saveddesign.Size:=0;
   LRSObjectTextToBinary(ms,saveddesign);
   ms.Destroy;
@@ -1645,6 +1680,13 @@ initialization
   registerclass(TColorListBox);
   registerclass(TLazVirtualStringTree);
   registerclass(TSynEdit);
+  registerclass(TMarkdownViewer);
+  registerclass(TSynGutterPartList);
+  registerclass(TSynGutterMarks);
+  registerclass(TSynGutterLineNumber);
+  registerclass(TSynGutterChanges);
+  registerclass(TSynGutterSeparator);
+  registerclass(TSynGutterCodeFolding);
   registerclass(TSynCompletion);
   registerclass(TSynAutoComplete);
 

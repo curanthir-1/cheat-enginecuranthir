@@ -1,6 +1,6 @@
 <p align="center">
-    <a href="https://github.com/cheat-engine/cheat-engine/raw/master/Cheat%20Engine/images">
-        <img src="https://github.com/cheat-engine/cheat-engine/raw/master/Cheat%20Engine/images/celogo.png" />
+    <a href="Cheat%20Engine/images">
+        <img src="Cheat%20Engine/images/celogo.png" />
     </a>
 </p>
 
@@ -8,34 +8,47 @@
 
 Cheat Engine is a development environment focused on modding games and applications for personal use.
 
+> **This is a community fork, and it is Claude coded.** The changes in this fork (the cleanup, the updated build,
+> the new Lua APIs, the AI tools integration and these documents) were written by Claude, Anthropic's AI model,
+> using [Claude Code](https://claude.com/claude-code), at the request of the fork's owner. It is not affiliated with
+> or endorsed by the original Cheat Engine project. Treat it like any other unofficial build: read the changes, and
+> build it yourself if you want to be sure what you are running.
+
+# What is different here
+
+* Based on the last public open source code (7.5 code base). **No installer, no bundled offers.**
+* The ad window, the automatic update check, the first-run server list download and a routine that downloaded and
+  ran a script from the web have been removed. Cheat Engine contacts nothing unless you ask it to.
+* Builds with current tools (Lazarus 3.0 / FPC 3.2.2), including a one-command cross-build from Linux and a GitHub
+  Actions workflow.
+* An **Extensions** folder, plus the Lua APIs current extensions need.
+* The **AI Tools** extension is included and updated: `Help -> Ask AI`, with your own API key (Anthropic, OpenAI,
+  DeepSeek, Gemini) or a local model.
+
+| Document | Contents |
+|---|---|
+| [docs/CHANGES.md](docs/CHANGES.md) | Everything that was changed, and the known limitations |
+| [docs/BUILDING.md](docs/BUILDING.md) | How to build it (Linux cross-build, Windows IDE, CI) |
+| [docs/AITOOLS.md](docs/AITOOLS.md) | The AI assistant: setup, privacy, what was changed, how it was tested |
 
 # Download
 
-  * **[Latest Version](https://github.com/cheat-engine/cheat-engine/releases/latest)**
+Builds are produced by GitHub Actions: open the **Actions** tab of this repository, pick the latest successful
+*Build* run, and download the `CheatEngine-community` artifact. Unzip it and run `Cheat Engine.exe`. Nothing is
+installed; delete the folder to remove it.
 
-[Older versions](https://github.com/cheat-engine/cheat-engine/releases)
+The executables are not code signed, so Windows SmartScreen or your antivirus may warn about them.
 
+# Original project
 
-# Links
-
-  * [Website](https://www.cheatengine.org)
-  * [Forum](https://forum.cheatengine.org)
+  * [Original repository](https://github.com/cheat-engine/cheat-engine)
+  * [Wiki](https://wiki.cheatengine.org/index.php?title=Main_Page)
   * [Forum (alternate)](https://opencheattables.com/)
   * [Forum (alternate)](https://fearlessrevolution.com/index.php)
-  * [Wiki](https://wiki.cheatengine.org/index.php?title=Main_Page)
 
-## Social Media
+## Original build instructions (Windows, Lazarus IDE)
 
-  * [Reddit](https://reddit.com/r/cheatengine)
-  * [Twitter](https://twitter.com/_cheatengine)
-
-## Donate
-
-  * [Patreon](https://www.patreon.com/cheatengine)
-  * [PayPal](https://www.paypal.com/xclick/business=dark_byte%40hotmail.com&no_note=1&tax=0&lc=US)
-
-
-## Basic Build Instructions
+See [docs/BUILDING.md](docs/BUILDING.md) for the scripted build. The upstream instructions follow.
 
   1. Download Lazarus 2.2.2 from https://sourceforge.net/projects/lazarus/files/Lazarus%20Windows%2064%20bits/Lazarus%202.2.2/ First install lazarus-2.2.2-fpc-3.2.2-win64.exe and then lazarus-2.2.2-fpc-3.2.2-cross-i386-win32-win64.exe
   

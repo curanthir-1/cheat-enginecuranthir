@@ -68,28 +68,7 @@ end;
 procedure TfrmMicroTransactions.BitBtn1Click(Sender: TObject);
 var ss: TStringstream;
 begin
-  {$IFDEF windows}
-  if internet=nil then
-    internet:=TWinInternet.Create({$ifdef altname}'Cheat Engine'{$else}strCheatEngine{$endif}+' microtransaction system');
-
-  ss:=tstringstream.create({$if FPC_FULLVERSION<030200}''{$endif});
-  try
-    try
-      internet.getURL('https://cheatengine.org/microtransaction.php?action=buy&amount='+inttostr(tbitbtn(sender).Tag), ss);
-      if luaL_loadstring(LuaVM, pchar(ss.DataString))=0 then
-        lua_pcall(LuaVM,0,0,0)
-      else
-      begin
-        lua_settop(LuaVM,0);
-        MessageDlg('There is an issue with the webserver. Please try again later',mtInformation, [mbok],0);
-      end;
-    except
-      MessageDlg('Sorry, but the '+strCheatEngine+' server is currently overloaded or you have no internet. Please try again later',mtInformation, [mbok],0);
-    end;
-  finally
-    ss.free;
-  end;
-  {$ENDIF}
+  //Disabled: this used to download a Lua script from a webserver and execute it.
 
 end;
 

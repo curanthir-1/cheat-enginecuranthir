@@ -31,9 +31,7 @@ uses
   {$ifdef darwin}
   ,macportdefines
   {$endif},
-  {$ifdef laztrunk}
   LazFileUtils,
-  {$endif}
   betterControls;
 
 
@@ -170,6 +168,7 @@ var
   waitforsymbols: boolean=true;
 
   autorunpath: string;
+  currentScriptPath: string; //path of the autorun/extension script currently being loaded
 
 
 
@@ -701,7 +700,9 @@ begin
     begin
       if ((DirInfo.Attr and FaDirectory) <> FaDirectory) then
       begin
-        i:=lua_dofile(luavm, pchar( UTF8ToWinCP(autorunpath+DirInfo.name)));
+        currentScriptPath:=path+DirInfo.name;
+        i:=lua_dofile(luavm, pchar( UTF8ToWinCP(path+DirInfo.name)));
+        currentScriptPath:='';
         if i<>0 then //error
         begin
           i:=lua_gettop(luavm);
@@ -724,7 +725,7 @@ begin
           lua_getglobal(LuaVM,'MainForm');
           if lua_isnil(LuaVM,-1) then
           begin
-            MessageDlg(format(rsScriptCorruptedVar, [autorunpath+DirInfo.name, 'MainForm']), mtError,[mbOK],0);
+            MessageDlg(format(rsScriptCorruptedVar, [path+DirInfo.name, 'MainForm']), mtError,[mbOK],0);
             mainformwasset:=false;
           end;
           lua_pop(LuaVM,1);
@@ -735,7 +736,7 @@ begin
           lua_getglobal(LuaVM,'AddressList');
           if lua_isnil(LuaVM,-1) then
           begin
-            MessageDlg(format(rsScriptCorruptedVar, [autorunpath+DirInfo.name, 'AddressList']), mtError,[mbOK],0);
+            MessageDlg(format(rsScriptCorruptedVar, [path+DirInfo.name, 'AddressList']), mtError,[mbOK],0);
             addresslistwasset:=false;
           end;
           lua_pop(LuaVM,1);
@@ -746,6 +747,96 @@ begin
     r := FindNext(DirInfo);
   end;
   FindClose(DirInfo);
+end;
+
+procedure LoadLuaExtension(path: string; var mainformwasset: boolean; var addresslistwasset: boolean);
+{
+Loads one extension folder (path ends with a path delimiter).
+If the folder contains a loadorder.txt, the entries in it (lua files or subfolders, one per line,
+lines starting with # are comments) are loaded in that order. Otherwise every .lua file in the folder is loaded
+}
+var
+  order: TStringList;
+  i: integer;
+  entry: string;
+  pc: pchar;
+begin
+  if not FileExists(path+'loadorder.txt') then
+  begin
+    LoadLuaScriptsFromPath(path, mainformwasset, addresslistwasset);
+    exit;
+  end;
+
+  order:=TStringList.create;
+  try
+    try
+      order.LoadFromFile(path+'loadorder.txt');
+    except
+      exit;
+    end;
+
+    for i:=0 to order.count-1 do
+    begin
+      entry:=trim(order[i]);
+      if (entry='') or (entry[1]='#') then continue;
+
+      if DirectoryExists(path+entry) then
+        LoadLuaScriptsFromPath(IncludeTrailingPathDelimiter(path+entry), mainformwasset, addresslistwasset)
+      else
+      if FileExists(path+entry) then
+      begin
+        currentScriptPath:=path+entry;
+        if lua_dofile(luavm, pchar( UTF8ToWinCP(path+entry)))<>0 then
+        begin
+          pc:=nil;
+          if lua_gettop(luavm)>0 then
+            pc:=lua_tolstring(luavm, -1,nil);
+
+          if pc<>nil then
+            showmessage(entry+rsError2+pc)
+          else
+            showmessage(entry+rsError3);
+        end;
+        currentScriptPath:='';
+        lua_pop(LuaVM, lua_gettop(luavm));
+      end;
+    end;
+  finally
+    order.free;
+  end;
+end;
+
+procedure LoadLuaExtensions(path: string; var mainformwasset: boolean; var addresslistwasset: boolean);
+//loads the lua files in the Extensions folder, and then every extension (subfolder) in it
+var
+  DirInfo: TSearchRec;
+  r: integer;
+  dirs: TStringList;
+  i: integer;
+begin
+  if not DirectoryExists(path) then exit;
+
+  LoadLuaScriptsFromPath(path, mainformwasset, addresslistwasset);
+
+  dirs:=TStringList.create;
+  try
+    ZeroMemory(@DirInfo,sizeof(TSearchRec));
+    r:=FindFirst(path+'*', FaAnyfile, DirInfo);
+    while r=0 do
+    begin
+      if ((DirInfo.Attr and FaDirectory)=FaDirectory) and (DirInfo.Name<>'.') and (DirInfo.Name<>'..') then
+        dirs.add(DirInfo.Name);
+
+      r:=FindNext(DirInfo);
+    end;
+    FindClose(DirInfo);
+
+    dirs.Sort;
+    for i:=0 to dirs.count-1 do
+      LoadLuaExtension(path+dirs[i]+PathDelim, mainformwasset, addresslistwasset);
+  finally
+    dirs.free;
+  end;
 end;
 
 procedure InitializeLuaScripts(noautorun: boolean=false);
@@ -822,6 +913,7 @@ begin
   begin
     loadLuaScriptsFromPath(autorunpath, mainformwasset, addresslistwasset);
     LoadLuaScriptsFromPath(autorunpath+'custom'+PathDelim, mainformwasset, addresslistwasset);
+    LoadLuaExtensions(CheatEngineDir+'Extensions'+PathDelim, mainformwasset, addresslistwasset);
   end;
 
   if translationfilepath<>'' then
@@ -3550,8 +3642,12 @@ var
   lc: TLuaCaller;
 
   bpe: TBreakpointEvent;
+  bp: PBreakpoint;
+  errormessage: string;
 begin
   lc:=nil;
+  bp:=nil;
+  errormessage:='';
 
   trigger:=bptExecute;
   result:=0;
@@ -3645,9 +3741,9 @@ begin
     if startdebuggerifneeded(false) then
     begin
       case trigger of
-        bptAccess: debuggerthread.SetOnAccessBreakpoint(address, size, method, threadid, bpe);
-        bptWrite: debuggerthread.SetOnWriteBreakpoint(address, size, method, threadid, bpe);
-        bptExecute: debuggerthread.SetOnExecuteBreakpoint(address, method,false, threadid, bpe);
+        bptAccess: bp:=debuggerthread.SetOnAccessBreakpoint(address, size, method, threadid, bpe);
+        bptWrite: bp:=debuggerthread.SetOnWriteBreakpoint(address, size, method, threadid, bpe);
+        bptExecute: bp:=debuggerthread.SetOnExecuteBreakpoint(address, method,false, threadid, bpe);
       end;
 
       MemoryBrowser.hexview.update;
@@ -3655,10 +3751,54 @@ begin
     end;
 
   except
+    on e: exception do
+      errormessage:=e.message;
   end;
 
-
   lua_pop(L, lua_gettop(L)); //clear the stack
+
+  //returns true and a breakpoint ID on success (usable with debug_removeBreakpointByID), false and an error message on failure
+  if bp<>nil then
+  begin
+    lua_pushboolean(L, true);
+    lua_pushinteger(L, ptruint(bp));
+  end
+  else
+  begin
+    if errormessage='' then errormessage:='Failure setting the breakpoint';
+    lua_pushboolean(L, false);
+    lua_pushstring(L, errormessage);
+  end;
+  result:=2;
+end;
+
+function debug_removeBreakpointByID(L: Plua_State): integer; cdecl;
+//debug_removeBreakpointByID(id): removes a breakpoint using the ID returned by debug_setBreakpoint
+var
+  id: ptruint;
+  found: boolean;
+begin
+  result:=2;
+  if (lua_gettop(L)<1) or (debuggerthread=nil) then
+  begin
+    lua_pushboolean(L, false);
+    lua_pushstring(L, 'No debugger attached or no breakpoint ID given');
+    exit;
+  end;
+
+  id:=lua_tointeger(L,1);
+  found:=debuggerthread.RemoveBreakpointIfValid(PBreakpoint(id));
+
+  if found then
+  begin
+    lua_pushboolean(L, true);
+    result:=1;
+  end
+  else
+  begin
+    lua_pushboolean(L, false);
+    lua_pushstring(L, 'Breakpoint not found (already removed?)');
+  end;
 end;
 
 function debug_setBreakpoint(L: Plua_State): integer; cdecl;
@@ -4615,6 +4755,10 @@ begin
       lua_pushinteger(L, ptruint(me32.modBaseAddr));
       lua_settable(L, entryindex);
 
+      lua_pushstring(L, 'Size');
+      lua_pushinteger(L, me32.modBaseSize);
+      lua_settable(L, entryindex);
+
       is64bitmodule:=processhandler.is64Bit;
 
       {$ifdef windows}
@@ -5194,26 +5338,8 @@ begin
 
     lua_pop(L, lua_gettop(L));
 
-    if adwindow=nil then
-      adwindow:=TADWindow.Create2(Application, hasclosebutton);
-
-    adwindow.clientWidth:=width;
-    adwindow.clientheight:=height;
-    adwindow.show;
-    adwindow.AttachToForm(attachwindow);
-    case position of
-      0: adwindow.setPosition(akTop);
-      1: adwindow.setPosition(akRight);
-      2: adwindow.setPosition(akBottom);
-      3: adwindow.setPosition(akLeft);
-    end;
-
-    adwindow.setUserUrl(yoururl);
-    adwindow.setUserPercentage(percentageshown);
-    adwindow.optional:=extraparameters;
-
-    adwindow.LoadAdNow;
-
+    //Advertising support has been removed from this build: supportCheatEngine() is accepted
+    //for compatibility with existing trainer scripts but does nothing.
 
   end else lua_pop(L, lua_gettop(L));
 end;
@@ -14866,6 +14992,40 @@ begin
   result:=1;
 end;
 
+function lua_getCurrentScriptPath(L: PLua_state): integer; cdecl;
+//returns the full path of the autorun/extension lua file that is currently being loaded, or nil if none
+begin
+  if currentScriptPath<>'' then
+    lua_pushstring(L, currentScriptPath)
+  else
+    lua_pushnil(L);
+  result:=1;
+end;
+
+function lua_getSystemArchitecture(L: PLua_state): integer; cdecl;
+//0=x86 32-bit, 1=x86_64, 2=arm 32-bit, 3=arm64
+begin
+  {$if defined(cpuaarch64)}
+  lua_pushinteger(L,3);
+  {$elseif defined(cpuarm)}
+  lua_pushinteger(L,2);
+  {$elseif defined(cpux86_64)}
+  lua_pushinteger(L,1);
+  {$else}
+  lua_pushinteger(L,0);
+  {$endif}
+  result:=1;
+end;
+
+function lua_dirExists(L: PLua_state): integer; cdecl;
+begin
+  if lua_gettop(L)>=1 then
+    lua_pushboolean(L, DirectoryExists(Lua_ToString(L,1)))
+  else
+    lua_pushboolean(L, false);
+  result:=1;
+end;
+
 function lua_createColorDialog(L: Plua_State): integer; cdecl;
 var
   owner: TComponent;
@@ -16455,6 +16615,7 @@ begin
     lua_register(L, 'debug_setBreakpoint', debug_setBreakpoint);
     lua_register(L, 'debug_setBreakpointForThread', debug_setBreakpointForThread);
     lua_register(L, 'debug_removeBreakpoint', debug_removeBreakpoint);
+    lua_register(L, 'debug_removeBreakpointByID', debug_removeBreakpointByID);
     lua_register(L, 'debug_continueFromBreakpoint', debug_continueFromBreakpoint);
 
     lua_register(L, 'debug_addThreadToNoBreakList', debug_addThreadToNoBreakList);
@@ -17068,6 +17229,10 @@ begin
     lua_register(L, 'getCEName', lua_getCEName);
     lua_register(L, 'getTempFolder', lua_getTempFolder);
     lua_register(L, 'fileExists', lua_fileExists);
+    lua_register(L, 'dirExists', lua_dirExists);
+    lua_register(L, 'directoryExists', lua_dirExists);
+    lua_register(L, 'getCurrentScriptPath', lua_getCurrentScriptPath);
+    lua_register(L, 'getSystemArchitecture', lua_getSystemArchitecture);
     lua_register(L, 'deleteFile', lua_deleteFile);
 
     lua_register(L, 'growMemoryRegion', lua_growMemoryRegion);

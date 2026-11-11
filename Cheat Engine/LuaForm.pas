@@ -338,7 +338,14 @@ begin
     lua_pop(L, lua_gettop(L));
 
     f:=TCEForm.Createnew(nil);   //6.3: was application
-    f.LoadFromFile(filename);
+    if lowercase(ExtractFileExt(filename))='.lfm' then
+    begin
+      //lazarus text form (as used by extensions)
+      f.LoadFromFileLFM(filename);
+      f.RestoreToDesignState;
+    end
+    else
+      f.LoadFromFile(filename);
 
 
 

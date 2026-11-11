@@ -156,6 +156,26 @@ begin
   else
     memscan.waittillreallydone();
 
+  lua_pushboolean(L, true);
+  result:=1;
+end;
+
+function memscan_getFoundCount(L: Plua_State): integer; cdecl;
+var
+  memscan: Tmemscan;
+begin
+  memscan:=luaclass_getClassObject(L);
+  lua_pushinteger(L, memscan.GetFoundCount);
+  result:=1;
+end;
+
+function memscan_getErrorString(L: Plua_State): integer; cdecl;
+var
+  memscan: Tmemscan;
+begin
+  memscan:=luaclass_getClassObject(L);
+  lua_pushstring(L, memscan.GetErrorString);
+  result:=1;
 end;
 
 function memscan_getAttachedFoundlist(L: Plua_State): integer; cdecl;
@@ -312,6 +332,9 @@ begin
   luaclass_addPropertyToTable(L, metatable, userdata, 'FoundList', memscan_getAttachedFoundlist, nil);
   luaclass_addPropertyToTable(L, metatable, userdata, 'OnlyOneResult', memscan_getreturnOnlyOneResult, memscan_setreturnOnlyOneResult);
   luaclass_addPropertyToTable(L, metatable, userdata, 'Result', memscan_getOnlyResult, nil);
+  luaclass_addPropertyToTable(L, metatable, userdata, 'FoundCount', memscan_getFoundCount, nil);
+  luaclass_addPropertyToTable(L, metatable, userdata, 'ErrorString', memscan_getErrorString, nil);
+  luaclass_addClassFunctionToTable(L, metatable, userdata, 'getFoundCount', memscan_getFoundCount);
 end;
 
 procedure InitializeMemscan;

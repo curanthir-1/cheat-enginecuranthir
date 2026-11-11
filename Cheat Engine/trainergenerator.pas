@@ -1291,7 +1291,7 @@ begin
 
     end;
 
-    if not cbSupportCheatEngine.checked then
+    if false then //ad support removed from this build
     begin
       if adconfig<>nil then
       begin
@@ -1867,7 +1867,9 @@ end;
 
 procedure TfrmTrainerGenerator.cbSupportCheatEngineChange(Sender: TObject);
 begin
-  //Guilt procedure
+  //Ad support has been removed from this build
+  exit;
+
   if not cbSupportCheatEngine.checked then
   begin
     cbSupportCheatEngine.caption:=rsThankYou;

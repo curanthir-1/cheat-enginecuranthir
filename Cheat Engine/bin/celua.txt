@@ -4205,3 +4205,56 @@ split(character) -> table of strings separated by character
 endsWith('string') : boolean - Returns true if the string ends with the given string
 startsWith('string') : boolean - Returns true if the string starts with the given string
 
+--------------------------------------------------------------------------------
+Additions in the community build (see docs/CHANGES.md)
+--------------------------------------------------------------------------------
+getCurrentScriptPath(): Returns the full path of the autorun/extension lua file that is currently being loaded, or nil when no such file is being loaded
+getSystemArchitecture(): Returns the architecture of this Cheat Engine build. 0=x86 32-bit, 1=x86_64, 2=arm 32-bit, 3=arm64
+dirExists(path) / directoryExists(path): Returns true if the given directory exists
+
+Extensions folder:
+  Besides the autorun folder, the lua files in the "Extensions" folder (next to the cheat engine executable) are loaded at startup,
+  followed by every sub folder (extension) in it, in alphabetical order.
+  If an extension folder contains a loadorder.txt, only the entries listed in that file are loaded, in that order. One lua file or
+  sub folder per line. Lines starting with # are comments. Without a loadorder.txt all lua files in the extension folder are loaded
+
+enumModules(): Each entry now also has the field
+    Size : The size of the module in memory
+
+debug_setBreakpoint / debug_setBreakpointForThread: Now return true and a breakpoint ID on success, or false and an error message on failure
+debug_removeBreakpointByID(id): Removes the breakpoint with the ID returned by debug_setBreakpoint. Returns true on success, false and an error message on failure
+
+createFormFromFile(filename): Besides .FRM files this now also loads lazarus text forms (.LFM). Properties this build does not know are skipped
+
+MemScan class:
+  FoundCount : integer - The number of results of the last scan (readonly)
+  ErrorString : string - The error of the last scan, or an empty string (readonly)
+  getFoundCount() : Returns the number of results of the last scan
+  waitTillDone() : Now returns true when the scan has finished
+
+Internet class:
+  Header : string - Extra request headers (separated by a CR/LF). These are now also used by postURL. When the header does not
+           contain a Content-Type, postURL sends the data as application/x-www-form-urlencoded like before
+  OnReceiveData : function(sender, data) - Called for every block of data that is received during getURL/postURL. Useful for
+           streaming responses (e.g. server-sent events). The complete response is still returned by getURL/postURL
+
+TMarkdownViewer: A read-only memo control that shows (markdown) text as plain text. It exists so forms designed for newer
+  cheat engine versions that use this control can be loaded
+
+Lua modules (use with require):
+  json = require('json')
+    json.encode(value) : Returns the JSON text of a lua value. A table is an array when it has a metatable with isArray=true,
+                         or when it is a non empty sequence. Anything else is an object
+    json.decode(string): Returns the lua value of a JSON text. Raises an error on invalid JSON
+  require('forEachForm')
+    forEachForm(classname, function(form)) : Calls the function for every existing form of that class (e.g 'TMemoryBrowser')
+    forEachAndFutureForm(classname, function(form)) : Same, and also for every form of that class that is created later
+
+Helper functions (autorun/apicompat.lua):
+  getFunctionRange(address) : Returns the start and stop address of the function the address is in (nil on failure)
+  enumSectionsOfModule(modulename) : Returns a table with the sections (Name, Address, Size, ...) of a loaded module
+  debug_getCurrentContextTable(extended OPTIONAL) : Returns the registers of the thread that is currently broken as a table
+  debug_stacktrace(stackpointer, size OPTIONAL) : Returns a list of probable return addresses found on the stack
+  tostringx(value) : tostring that also shows the contents of tables
+
+Removed: supportCheatEngine() and the trainer ad window no longer do anything (advertisement support has been removed)

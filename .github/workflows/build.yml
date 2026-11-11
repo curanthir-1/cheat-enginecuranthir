@@ -1,0 +1,39 @@
+name: Build
+
+on:
+  push:
+    branches: [master, main, 'claude/**']
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up the cross toolchain (FPC 3.2.2 + Lazarus 3.0, win64 and win32 targets)
+        run: sudo build/setup-toolchain.sh
+
+      - name: Build Cheat Engine
+        run: build/build.sh "$GITHUB_WORKSPACE/dist/CheatEngine-community.zip"
+
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: dist/logs
+          if-no-files-found: ignore
+
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: CheatEngine-community
+          path: dist/CheatEngine-community.zip
+          if-no-files-found: error

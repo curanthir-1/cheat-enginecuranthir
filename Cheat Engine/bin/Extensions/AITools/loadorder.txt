@@ -1,0 +1,4 @@
+#this file controls the order the lua files are loaded
+aibase.lua
+skills.lua
+tools 

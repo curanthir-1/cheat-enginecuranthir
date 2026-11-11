@@ -8573,7 +8573,7 @@ begin
     ShowMessage(strFuture);
 
   if (month = 4) and (day = 1) then
-    aprilfools := True;
+    aprilfools := False; //the april fools 'cheat-e-coin' system (which fetched and ran scripts from a webserver) is disabled in this build
 
 
   //aprilfools:=true;

@@ -154,6 +154,7 @@ type
 
     procedure UpdateDebugRegisterBreakpointsForThread(t: TDebugThreadHandler);
     procedure RemoveBreakpoint(breakpoint: PBreakpoint);
+    function RemoveBreakpointIfValid(breakpoint: PBreakpoint): boolean; //removes the breakpoint only if it is still in the breakpoint list
     function GetUsableDebugRegister(breakpointTrigger: TBreakpointTrigger): integer;
     function GetMaxBreakpointCountForThisType(breakpointTrigger: TBreakpointTrigger): integer;
     function DoBreakpointTriggersUseSameDebugRegisterKind(bpt1: TBreakpointTrigger; bpt2: TBreakpointTrigger): boolean;
@@ -1571,6 +1572,21 @@ begin
 
   breakpoint^.active := false;
 
+end;
+
+function TDebuggerThread.RemoveBreakpointIfValid(breakpoint: PBreakpoint): boolean;
+begin
+  result:=false;
+  debuggercs.enter;
+  try
+    if BreakpointList.IndexOf(breakpoint)<>-1 then
+    begin
+      RemoveBreakpoint(breakpoint);
+      result:=true;
+    end;
+  finally
+    debuggercs.leave;
+  end;
 end;
 
 procedure TDebuggerThread.RemoveBreakpoint(breakpoint: PBreakpoint);
