@@ -33,6 +33,8 @@ options, links in the Help/About menus, Lua scripts you run, and the AI tools (t
 * `autorun/custom/*.lua` was loaded from the wrong folder (the loader always used the `autorun` path).
 * `TCEForm.LoadFromFileLFM` crashed on a form that had no saved design yet.
 * `debug_setBreakpoint` swallowed every error and returned nothing; it now reports success or the error.
+* The launcher (`Cheat Engine.exe`) refused to start on CPUs with AVX2 when the optional AVX2 build
+  (`cheatengine-x86_64-SSE4-AVX2.exe`) was not present. It now falls back to `cheatengine-x86_64.exe`.
 
 ## 4. New Lua API (needed by current extensions)
 

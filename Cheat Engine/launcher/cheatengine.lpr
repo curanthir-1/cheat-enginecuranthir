@@ -94,6 +94,10 @@ begin
       exename:=basename+'-x86_64-SSE4-AVX2.exe'
     else
       exename:=basename+'-x86_64.exe';
+
+    //the AVX2 optimized build is optional. Use the normal 64-bit build when it is not there
+    if not FileExists(selfpath+exename) then
+      exename:=basename+'-x86_64.exe';
   end;
 
   
@@ -102,7 +106,7 @@ begin
   else
   begin
     s:=exename;
-    MessageBoxW(0, pwidechar(exename+' could not be found. Please disable/uninstall your anti virus and reinstall Cheat Engine to fix this'),'Cheat Engine launch error',MB_OK or MB_ICONERROR);
+    MessageBoxW(0, pwidechar(exename+' could not be found in the folder of this launcher. It may have been removed or quarantined by your antivirus. Extract the Cheat Engine folder again.'),'Cheat Engine launch error',MB_OK or MB_ICONERROR);
   end;
 
 

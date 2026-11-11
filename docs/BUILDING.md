@@ -15,7 +15,8 @@ build/build.sh
 The first command installs the packages and builds the Windows cross toolchain (about five minutes). The second
 builds everything (about ten minutes) into `Cheat Engine/bin` and zips that folder to
 `dist/CheatEngine-community.zip`. Unzip it on Windows and run `Cheat Engine.exe` (a launcher that starts the 64-bit
-or 32-bit build), or `cheatengine-x86_64.exe` directly.
+or 32-bit build), or `cheatengine-x86_64.exe` directly. It is portable: there is no installer, nothing has to be
+registered, and settings are kept in the registry under `HKCU\Software\Cheat Engine`.
 
 ### What the toolchain script does
 
