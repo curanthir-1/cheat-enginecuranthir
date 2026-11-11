@@ -33,6 +33,7 @@ Cheat Engine is a development environment focused on modding games and applicati
 | [docs/BUILDING.md](docs/BUILDING.md) | How to build it (Linux cross-build, Windows IDE, CI) |
 | [docs/AITOOLS.md](docs/AITOOLS.md) | The AI assistant: setup, privacy, what was changed, how it was tested |
 | [docs/MCP.md](docs/MCP.md) | Using Cheat Engine from Claude Code or Claude Desktop with a subscription (MCP bridge) |
+| [docs/SECURITY-AUDIT.md](docs/SECURITY-AUDIT.md) | What uses the network and when, what was checked, and why antivirus flags the download |
 
 # Download
 
