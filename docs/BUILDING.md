@@ -40,6 +40,7 @@ for the win32 widget set by itself the first time `lazbuild` runs.
 | `speedhack-*.dll`, `vehdebug-*.dll`, `luaclient-*.dll`, `allochook-*.dll`, `winhook-*.dll` | the folders of the same name |
 | `Tutorial-x86_64.exe`, `Tutorial-i386.exe` | `Tutorial/tutorial.lpi` |
 | `ceregreset.exe`, `xmplayer.exe`, `windowsrepair.exe`, `cepack.exe` | the folders of the same name |
+| `ce-mcp.exe` | `mcpbridge/cemcp.lpr` (plain FPC program, built with `fpc` directly) |
 
 ### Things to know
 

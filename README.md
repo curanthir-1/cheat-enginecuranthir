@@ -24,12 +24,15 @@ Cheat Engine is a development environment focused on modding games and applicati
 * An **Extensions** folder, plus the Lua APIs current extensions need.
 * The **AI Tools** extension is included and updated: `Help -> Ask AI`, with your own API key (Anthropic, OpenAI,
   DeepSeek, Gemini) or a local model.
+* An **MCP bridge** (`ce-mcp.exe`), so Claude Code or the Claude desktop app can use the same tools with a
+  subscription instead of an API key.
 
 | Document | Contents |
 |---|---|
 | [docs/CHANGES.md](docs/CHANGES.md) | Everything that was changed, and the known limitations |
 | [docs/BUILDING.md](docs/BUILDING.md) | How to build it (Linux cross-build, Windows IDE, CI) |
 | [docs/AITOOLS.md](docs/AITOOLS.md) | The AI assistant: setup, privacy, what was changed, how it was tested |
+| [docs/MCP.md](docs/MCP.md) | Using Cheat Engine from Claude Code or Claude Desktop with a subscription (MCP bridge) |
 
 # Download
 

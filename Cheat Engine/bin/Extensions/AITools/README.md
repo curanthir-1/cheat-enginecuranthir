@@ -9,3 +9,6 @@ community build. The full list of changes and the usage guide are in `docs/AITOO
 
 You need your own API key (Anthropic, OpenAI, DeepSeek, Google Gemini) or a local model (Ollama, LM Studio, any
 OpenAI compatible server). Nothing is sent anywhere except to the provider you configure.
+
+With a Claude subscription instead of an API key, Claude Code or the Claude desktop app can use the same tools
+through the MCP server (`mcpserver.lua` + `ce-mcp.exe`). See `docs/MCP.md`.

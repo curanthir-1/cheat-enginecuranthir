@@ -366,7 +366,7 @@ begin
           o.hEvent:=waitevent;
           resetevent(o.hEvent);
 
-          if writefile(pipe, bytes^, size, bw,@o)=false then
+          if writefile(pipe, bytes^, size-totalwritten, bw,@o)=false then
           begin
             if GetLastError=ERROR_IO_PENDING then
             begin
@@ -392,7 +392,7 @@ begin
         end;
       end
       else
-        fconnected:=fconnected and writefile(pipe, bytes^, size, bw, nil);
+        fconnected:=fconnected and writefile(pipe, bytes^, size-totalwritten, bw, nil);
       {$endif}
       {$ifdef darwin}
       fconnected:=writepipe(pipe, bytes, size, ftimeout);
@@ -444,7 +444,7 @@ begin
 
           o.hEvent:=waitevent;
           resetevent(o.hEvent);
-          if Readfile(pipe, bytes^, size, br,@o)=false then
+          if Readfile(pipe, bytes^, size-totalread, br,@o)=false then //only ask for what is still missing (a partial read used to overrun the buffer)
           begin
             if GetLastError=ERROR_IO_PENDING then
             begin
@@ -474,7 +474,7 @@ begin
       begin
         while fconnected and (totalread<size) do
         begin
-          fconnected:=fconnected and Readfile(pipe, bytes^, size, br, nil);
+          fconnected:=fconnected and Readfile(pipe, bytes^, size-totalread, br, nil);
           inc(totalread,br);
           inc(bytes, br);
         end;

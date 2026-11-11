@@ -5,6 +5,9 @@ The fork ships the AI assistant extension from <https://github.com/cheat-engine/
 written for a newer, closed Cheat Engine than the public 7.5 source, so two things were needed: Cheat Engine had to
 learn the API the extension uses ([CHANGES.md](CHANGES.md), section 4), and the extension itself had to be updated.
 
+No API key but a Claude subscription? See [MCP.md](MCP.md): Claude Code or the Claude desktop app can use the same
+tools.
+
 ## Using it
 
 1. Start Cheat Engine and open `Help -> Ask AI` (Ctrl+Alt+I).

@@ -54,6 +54,16 @@ Documented at the end of `Cheat Engine/bin/celua.txt`.
 
 `Cheat Engine/bin/Extensions/AITools`. See [AITOOLS.md](AITOOLS.md).
 
+## 6. MCP bridge
+
+`ce-mcp.exe` plus `Extensions/AITools/mcpserver.lua` expose the AI tools over the Model Context Protocol, so Claude
+Code or the Claude desktop app (signed in with a subscription) can drive Cheat Engine. Off by default; enabled from
+`Help -> MCP server`. See [MCP.md](MCP.md).
+
+While building it, a bug in Cheat Engine's pipe code was found and fixed: `TPipeConnection.ReadBytes` and
+`WriteBytes` asked for the full size again after a partial read or write, which overran the buffer and hung on
+messages larger than the pipe buffer (`luapipe.pas`).
+
 ## Known limitations
 
 * **Components that need Visual Studio are not built.** The zip contains what the Lazarus projects produce plus the
@@ -67,4 +77,4 @@ Documented at the end of `Cheat Engine/bin/celua.txt`.
   64-bit build under Wine 9. The 32-bit build compiles but was not run.
 * The markdown viewer shows the raw markdown text; it does not render formatting.
 * The AI integration was tested against a local mock of the Anthropic API, not against the live services (no API key
-  was available during development).
+  was available during development). The MCP bridge was tested with a scripted client, not with a real Claude client.

@@ -58,7 +58,8 @@ build_target() { # $1 = cpu, $2 = os, $3 = compiler
 }
 
 echo "=== win64 RTL and packages ==="
-(cd packages/fpmkunit && fpcmake -Tx86_64-linux -w Makefile.fpc)
+# fpmkunit (the package build tool) is bootstrapped by the packages makefile, for the host and for both targets
+(cd packages/fpmkunit && fpcmake -Tx86_64-linux,x86_64-win64,i386-win32 -w Makefile.fpc)
 build_target x86_64 win64 /usr/bin/ppcx64
 
 echo "=== i386 cross compiler ==="

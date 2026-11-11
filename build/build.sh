@@ -55,6 +55,15 @@ build xmplayer/xmplayer.lpi     i386   win32 "Default"
 build windowsrepair/windowsrepair.lpi x86_64 win64 "Release"
 build cepack/cepack.lpi         x86_64 win64 "Default"
 
+# The MCP bridge is a plain console program (no Lazarus packages), so it is built with the compiler directly
+echo "--- mcpbridge/cemcp.lpr (x86_64)"
+mkdir -p mcpbridge/lib
+if ! fpc -Twin64 -Px86_64 -O2 -Xs -FEbin -FUmcpbridge/lib -oce-mcp.exe mcpbridge/cemcp.lpr > "$LOG/mcpbridge.log" 2>&1; then
+  grep -E "Error:|Fatal:" "$LOG/mcpbridge.log" | head -20 || true
+  echo "BUILD FAILED: mcpbridge. See $LOG/mcpbridge.log"
+  exit 1
+fi
+
 # lazbuild rewrites the project files (build counters, session data). Do not leave that in the working tree.
 git -C "$ROOT" checkout -- '*.lpi' 2>/dev/null || true
 
